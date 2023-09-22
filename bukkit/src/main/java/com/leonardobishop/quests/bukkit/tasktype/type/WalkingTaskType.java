@@ -44,6 +44,7 @@ public final class WalkingTaskType extends BukkitTaskType {
                 "flying",
                 "elytra"
         ), "mode"));
+        super.addConfigValidator(TaskUtils.useBooleanConfigValidator(this, "force-ground-walking"));
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -57,7 +58,7 @@ public final class WalkingTaskType extends BukkitTaskType {
             return;
         }
 
-        handle(player);
+        handle(player, false);
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -69,12 +70,12 @@ public final class WalkingTaskType extends BukkitTaskType {
         List<Entity> entities = event.getVehicle().getPassengers();
         for (Entity entity : entities) {
             if (entity instanceof Player player) {
-                handle(player);
+                handle(player, true);
             }
         }
     }
 
-    private void handle(Player player) {
+    private void handle(Player player, boolean passenger) {
         if (player.hasMetadata("NPC")) {
             return;
         }
@@ -95,6 +96,13 @@ public final class WalkingTaskType extends BukkitTaskType {
             if (mode != null && !validateMode(player, mode)) {
                 super.debug("Player's mode does not match required mode, continuing...", quest.getId(), task.getId(), player.getUniqueId());
                 continue;
+            }
+
+            if (!passenger && (boolean) task.getConfigValue("force-ground-walking", false)) {
+                // this is not that ideal for a ground check, but in lieu of not using more resources this will do
+                if (!player.isOnGround()) {
+                    continue;
+                }
             }
 
             int progress = TaskUtils.incrementIntegerTaskProgress(taskProgress);
