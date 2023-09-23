@@ -152,8 +152,12 @@ public class TaskUtils {
     }
     
     public static void sendTrackAdvancement(Player player, Quest q, TaskProgress progress) {
-        String title = q.getPlaceholders().get("progress");
-        if(title == null)
+        final String descriptionPlaceholder = q.getPlaceholders().getOrDefault("description", "N/A");
+        final String progressPlaceholder = q.getPlaceholders().getOrDefault("progress", "N/A");
+
+        String title = Messages.UI_PLACEHOLDERS_TASK_PROGRESS.applySubstitutions("{description}", descriptionPlaceholder, "{progress}", progressPlaceholder);
+
+        if(title == null || title.isEmpty())
             return;
         title = ChatColor.translateAlternateColorCodes('&', QItemStack.processPlaceholders(title, progress));
         if (plugin.getQuestsConfig().getBoolean("options.gui-use-placeholderapi")) {

@@ -139,6 +139,7 @@ public class QItemStack {
                 if (taskProgress == null) {
                     continue;
                 }
+
                 if (parts[1].equals("progress")) {
                     Object progress = taskProgress.getProgress();
                     String str;
