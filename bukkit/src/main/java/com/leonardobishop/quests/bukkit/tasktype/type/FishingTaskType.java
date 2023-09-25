@@ -79,7 +79,7 @@ public final class FishingTaskType extends BukkitTaskType {
 
                 super.debug("Player fished item of type " + item.getType(), quest.getId(), task.getId(), player.getUniqueId());
 
-                boolean exactMatch = TaskUtils.getConfigBoolean(task, "exact-match", true);
+                boolean exactMatch = TaskUtils.getConfigBoolean(task, "exact-match", false);
                 if (!qi.compareItemStack(item, exactMatch)) {
                     super.debug("Item does not match required item, continuing...", quest.getId(), task.getId(), player.getUniqueId());
                     continue;
