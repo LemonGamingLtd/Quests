@@ -115,23 +115,11 @@ public final class Chat {
      * @param substitutions pairs of substitutions
      */
     public static void send(CommandSender who, String message, boolean allowLegacy, String... substitutions) {
-        if (substitutions.length % 2 != 0) {
-            throw new IllegalArgumentException("uneven substitutions passed");
-        }
-
-        if (message == null || message.isEmpty()) {
-            return;
-        }
-
-        String substitutedMessage = message;
-        for (int i = 0; i < substitutions.length; i += 2) {
-            substitutedMessage = substitutedMessage.replace(substitutions[i], substitutions[i + 1]);
-        }
-
+        message = applySubstitutions(message, substitutions);
         if (miniMessageParser == null || (allowLegacy && usesLegacy(message))) {
-            who.sendMessage(legacyColor(substitutedMessage));
+            who.sendMessage(legacyColor(message));
         } else {
-            miniMessageParser.send(who, substitutedMessage);
+            miniMessageParser.send(who, message);
         }
     }
 
@@ -145,4 +133,28 @@ public final class Chat {
     public static void send(CommandSender who, String message, String... substitutions) {
         send(who, message, false, substitutions);
     }
+
+    /**
+     * Method to apply the substitutions to the given message.
+     *
+     * @param message Message to apply substitutions to.
+     * @param substitutions Substitutions to apply.
+     * @return Message with substitution applied.
+     */
+    public static String applySubstitutions(String message, String... substitutions) {
+        if (substitutions.length % 2 != 0) {
+            throw new IllegalArgumentException("uneven substitutions passed");
+        }
+
+        if (message == null || message.isEmpty()) {
+            return message;
+        }
+
+        String substitutedMessage = message;
+        for (int i = 0; i < substitutions.length ; i += 2) {
+            substitutedMessage = substitutedMessage.replace(substitutions[i], substitutions[i+1]);
+        }
+        return substitutedMessage;
+    }
+
 }

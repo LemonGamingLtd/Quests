@@ -72,6 +72,7 @@ public enum Messages {
     UI_PLACEHOLDERS_FALSE("messages.ui-placeholder-completed-false", "false"),
     UI_PLACEHOLDERS_TRUNCATED("messages.ui-placeholder-truncated", " +{amount} more"),
     UI_PLACEHOLDERS_NO_TIME_LIMIT("messages.ui-placeholder-no-time-limit", "No time limit"),
+    UI_PLACEHOLDERS_TASK_PROGRESS("messages.ui-placeholder-task-progress", "&3{description} &f{progress}"),
     PLACEHOLDERAPI_TRUE("messages.placeholderapi-true", "true"),
     PLACEHOLDERAPI_FALSE("messages.placeholderapi-false", "false"),
     PLACEHOLDERAPI_NO_TRACKED_QUEST("messages.placeholderapi-no-tracked-quest", "No tracked quest"),
@@ -107,6 +108,10 @@ public enum Messages {
         if (message.equals(path)) message = def;
 
         return message;
+    }
+
+    public String applySubstitutions(String... substitutions) {
+        return Chat.applySubstitutions(getMessage(), substitutions);
     }
 
     public boolean send(CommandSender target, String... substitutions) {

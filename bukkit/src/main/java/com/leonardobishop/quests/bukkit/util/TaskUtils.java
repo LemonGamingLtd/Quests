@@ -198,6 +198,9 @@ public class TaskUtils {
             return; // no valid title format found
         }
 
+        final String descriptionPlaceholder = quest.getPlaceholders().getOrDefault("description", "N/A");
+        title = Messages.UI_PLACEHOLDERS_TASK_PROGRESS.applySubstitutions("{description}", descriptionPlaceholder, "{progress}", title);
+
         QuestProgress questProgress = pendingTask.questProgress();
         title = QItemStack.processPlaceholders(title, questProgress, taskProgress);
 
