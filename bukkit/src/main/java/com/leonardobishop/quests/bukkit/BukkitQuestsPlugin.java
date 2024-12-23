@@ -19,6 +19,7 @@ import com.leonardobishop.quests.bukkit.hook.essentials.EssentialsHook;
 import com.leonardobishop.quests.bukkit.hook.itemgetter.ItemGetter;
 import com.leonardobishop.quests.bukkit.hook.itemgetter.ItemGetter13;
 import com.leonardobishop.quests.bukkit.hook.itemgetter.ItemGetter14;
+import com.leonardobishop.quests.bukkit.hook.itemgetter.ItemGetter20;
 import com.leonardobishop.quests.bukkit.hook.itemgetter.ItemGetter8;
 import com.leonardobishop.quests.bukkit.hook.papi.AbstractPlaceholderAPIHook;
 import com.leonardobishop.quests.bukkit.hook.papi.PlaceholderAPIHook;
@@ -33,6 +34,8 @@ import com.leonardobishop.quests.bukkit.hook.title.QuestsTitle;
 import com.leonardobishop.quests.bukkit.hook.title.Title_Bukkit;
 import com.leonardobishop.quests.bukkit.hook.title.Title_BukkitNoTimings;
 import com.leonardobishop.quests.bukkit.hook.title.Title_Nothing;
+import com.leonardobishop.quests.bukkit.hook.vault.AbstractVaultHook;
+import com.leonardobishop.quests.bukkit.hook.vault.VaultHook;
 import com.leonardobishop.quests.bukkit.hook.versionspecific.VersionSpecificHandler;
 import com.leonardobishop.quests.bukkit.hook.versionspecific.VersionSpecificHandler11;
 import com.leonardobishop.quests.bukkit.hook.versionspecific.VersionSpecificHandler16;
@@ -59,6 +62,7 @@ import com.leonardobishop.quests.bukkit.scheduler.folia.FoliaServerScheduler;
 import com.leonardobishop.quests.bukkit.storage.MySqlStorageProvider;
 import com.leonardobishop.quests.bukkit.storage.YamlStorageProvider;
 import com.leonardobishop.quests.bukkit.tasktype.BukkitTaskTypeManager;
+import com.leonardobishop.quests.bukkit.tasktype.type.BarteringTaskType;
 import com.leonardobishop.quests.bukkit.tasktype.type.BlockItemdroppingTaskType;
 import com.leonardobishop.quests.bukkit.tasktype.type.BlockshearingTaskType;
 import com.leonardobishop.quests.bukkit.tasktype.type.BreedingTaskType;
@@ -98,6 +102,7 @@ import com.leonardobishop.quests.bukkit.tasktype.type.ShearingTaskType;
 import com.leonardobishop.quests.bukkit.tasktype.type.SmeltingTaskType;
 import com.leonardobishop.quests.bukkit.tasktype.type.SmithingTaskType;
 import com.leonardobishop.quests.bukkit.tasktype.type.TamingTaskType;
+import com.leonardobishop.quests.bukkit.tasktype.type.TradingTaskType;
 import com.leonardobishop.quests.bukkit.tasktype.type.WalkingTaskType;
 import com.leonardobishop.quests.bukkit.tasktype.type.dependent.ASkyBlockLevelTaskType;
 import com.leonardobishop.quests.bukkit.tasktype.type.dependent.BentoBoxLevelTaskType;
@@ -127,6 +132,7 @@ import com.leonardobishop.quests.bukkit.tasktype.type.dependent.ZNPCsPlusDeliver
 import com.leonardobishop.quests.bukkit.tasktype.type.dependent.ZNPCsPlusInteractTaskType;
 import com.leonardobishop.quests.bukkit.tasktype.type.dependent.uSkyBlockLevelTaskType;
 import com.leonardobishop.quests.bukkit.util.CompatUtils;
+import com.leonardobishop.quests.bukkit.util.FormatUtils;
 import com.leonardobishop.quests.bukkit.util.LogHistory;
 import com.leonardobishop.quests.common.config.ConfigProblem;
 import com.leonardobishop.quests.common.config.ConfigProblemDescriptions;
@@ -154,6 +160,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.scheduler.BukkitRunnable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -169,6 +176,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
+import java.util.logging.Level;
 
 public class BukkitQuestsPlugin extends JavaPlugin implements Quests {
 
@@ -194,6 +202,7 @@ public class BukkitQuestsPlugin extends JavaPlugin implements Quests {
     private AbstractCoreProtectHook coreProtectHook;
     private AbstractEssentialsHook essentialsHook;
     private AbstractPlayerBlockTrackerHook playerBlockTrackerHook;
+    private AbstractVaultHook vaultHook;
     private AbstractWildStackerHook wildStackerHook;
     private ItemGetter itemGetter;
     private SkullGetter skullGetter;
@@ -270,7 +279,7 @@ public class BukkitQuestsPlugin extends JavaPlugin implements Quests {
         questsLogger.info("Running server scheduler: " + serverScheduler.getServerSchedulerName());
 
         // Load base configuration for use during rest of startup procedure
-        if (!this.reloadBaseConfiguration()) {
+        if (!this.reloadBaseConfiguration(true)) {
             questsLogger.severe("Plugin cannot start into a stable state as the configuration is broken!");
             super.getServer().getPluginManager().disablePlugin(this);
             return;
@@ -303,42 +312,47 @@ public class BukkitQuestsPlugin extends JavaPlugin implements Quests {
         // Setup version specific compatibility layers
         int version;
         try {
-            version = Integer.parseInt(super.getServer().getBukkitVersion().split("\\.", 3)[1]);
-        } catch (ArrayIndexOutOfBoundsException | NumberFormatException e) {
-            questsLogger.warning("Failed to resolve server version - some features may not work!");
-            version = 0;
-        }
+            version = this.getServerVersion();
+            this.questsLogger.info("Your server is running version 1." + version);
+        } catch (final IllegalArgumentException e) {
+            // all server supported versions by Quests fulfill this format,
+            // so we assume that some future version can possibly break it,
+            // and we want to load the latest and not the oldest handler
+            version = Integer.MAX_VALUE;
 
-        questsLogger.info("Your server is running version 1." + version);
+            this.questsLogger.warning("Failed to resolve server version - some features may not work! (" + e.getMessage() + ")");
+        }
 
         // (titles)
-        setTitleHandle();
+        this.setTitleHandle();
 
         // (bossbar)
-        setBossBarHandle();
+        this.setBossBarHandle();
 
         // (actionbar)
-        setActionBarHandle();
+        this.setActionBarHandle();
 
         // (itemstacks)
-        setItemGetter();
+        this.setItemGetter();
 
         // (skulls)
-        setSkullGetter();
+        this.setSkullGetter();
 
         // (version specific handler)
-        // TODO move above to version specific handlers
         if (version <= 8) {
-            versionSpecificHandler = new VersionSpecificHandler8();
-        } else switch (version) {
-            case 9, 10 -> versionSpecificHandler = new VersionSpecificHandler9();
-            case 11, 12, 13, 14, 15 -> versionSpecificHandler = new VersionSpecificHandler11();
-            case 16 -> versionSpecificHandler = new VersionSpecificHandler16();
-            case 17, 18, 19 -> versionSpecificHandler = new VersionSpecificHandler17();
-            default -> versionSpecificHandler = new VersionSpecificHandler20();
+            this.versionSpecificHandler = new VersionSpecificHandler8();
+        } else {
+            this.versionSpecificHandler = switch (version) {
+                case 9, 10 -> new VersionSpecificHandler9();
+                case 11, 12, 13, 14, 15 -> new VersionSpecificHandler11();
+                case 16 -> new VersionSpecificHandler16();
+                case 17, 18, 19 -> new VersionSpecificHandler17();
+                default -> new VersionSpecificHandler20();
+            };
         }
 
-        questsConfig.setItemGetter(itemGetter);
+        // Set item getter to be used by Quests config
+        this.questsConfig.setItemGetter(this.itemGetter);
 
         // Finish module initialisation
         this.taskTypeManager = new BukkitTaskTypeManager(this, new HashSet<>(questsConfig.getStringList("options.task-type-exclusions")));
@@ -408,6 +422,9 @@ public class BukkitQuestsPlugin extends JavaPlugin implements Quests {
             } catch (ClassCastException | ClassNotFoundException | NoSuchMethodException ignored) {
             }
 
+            // Plugin checks are handled in the hook class
+            this.vaultHook = new VaultHook(this);
+
             if (CompatUtils.isPluginEnabled("WildStacker")) {
                 this.wildStackerHook = new WildStackerHook();
             }
@@ -443,6 +460,7 @@ public class BukkitQuestsPlugin extends JavaPlugin implements Quests {
             taskTypeManager.registerTaskType(new WalkingTaskType(this));
 
             // Register task types with class/method compatibility requirement
+            taskTypeManager.registerTaskType(() -> new BarteringTaskType(this), () -> CompatUtils.classExists("org.bukkit.event.entity.PiglinBarterEvent"));
             taskTypeManager.registerTaskType(() -> new BlockItemdroppingTaskType(this), () -> CompatUtils.classExists("org.bukkit.event.block.BlockDropItemEvent"));
             taskTypeManager.registerTaskType(() -> new BlockshearingTaskType(this), () -> CompatUtils.classExists("io.papermc.paper.event.block.PlayerShearBlockEvent"));
             taskTypeManager.registerTaskType(() -> new BrewingTaskType(this), () -> CompatUtils.classWithMethodExists("org.bukkit.event.inventory.BrewEvent", "getResults"));
@@ -455,9 +473,11 @@ public class BukkitQuestsPlugin extends JavaPlugin implements Quests {
             taskTypeManager.registerTaskType(() -> new ReplenishingTaskType(this), () -> CompatUtils.classExists("com.destroystokyo.paper.loottable.LootableInventoryReplenishEvent"));
             taskTypeManager.registerTaskType(() -> new ResurrectingTaskType(this), () -> CompatUtils.classExists("org.bukkit.event.entity.EntityResurrectEvent"));
             taskTypeManager.registerTaskType(() -> new SmithingTaskType(this), () -> CompatUtils.classExists("org.bukkit.event.inventory.SmithItemEvent"));
+            taskTypeManager.registerTaskType(() -> new TradingTaskType(this), () -> CompatUtils.classExists("io.papermc.paper.event.player.PlayerTradeEvent"));
 
             // Register task types with enabled plugin compatibility requirement
             taskTypeManager.registerTaskType(() -> new ASkyBlockLevelTaskType(this), () -> CompatUtils.isPluginEnabled("ASkyBlock"));
+            taskTypeManager.registerTaskType(() -> new BentoBoxLevelTaskType(this), () -> CompatUtils.isPluginEnabled("BentoBox") && CompatUtils.classExists("world.bentobox.level.events.IslandLevelCalculatedEvent"));
             taskTypeManager.registerTaskType(() -> new CitizensDeliverTaskType(this), () -> CompatUtils.isPluginEnabled("Citizens"));
             taskTypeManager.registerTaskType(() -> new CitizensInteractTaskType(this), () -> CompatUtils.isPluginEnabled("Citizens"));
             taskTypeManager.registerTaskType(() -> new CustomFishingFishingTaskType(this), () -> CompatUtils.isPluginEnabled("CustomFishing"));
@@ -492,11 +512,6 @@ public class BukkitQuestsPlugin extends JavaPlugin implements Quests {
                 return pluginVersion != null && (pluginVersion.startsWith("4") || pluginVersion.startsWith("5"));
             });
 
-            // Register task types with even more weird requirements
-            if (CompatUtils.isPluginEnabled("BentoBox")) {
-                BentoBoxLevelTaskType.register(this, taskTypeManager);
-            }
-
             // Close task type registrations
             taskTypeManager.closeRegistrations();
 
@@ -521,10 +536,37 @@ public class BukkitQuestsPlugin extends JavaPlugin implements Quests {
         });
     }
 
+    /**
+     * Gets the server minor version.
+     *
+     * @return the server minor version
+     * @throws IllegalArgumentException with message set to the bukkit version if it could not be parsed successfully.
+     */
+    private int getServerVersion() throws IllegalArgumentException {
+        final String bukkitVersion = this.getServer().getBukkitVersion();
+
+        final String[] bukkitVersionParts = bukkitVersion.split("\\.", 3);
+        if (bukkitVersionParts.length < 2) {
+            throw new IllegalArgumentException(bukkitVersion, new ArrayIndexOutOfBoundsException(bukkitVersionParts.length));
+        }
+
+        final String minorVersionPart = bukkitVersionParts[1].split("-")[0];
+        try {
+            return Integer.parseInt(minorVersionPart);
+        } catch (final NumberFormatException e) {
+            throw new IllegalArgumentException(bukkitVersion, e);
+        }
+    }
+
+    /**
+     * Gets the tasks registration message.
+     *
+     * @return the tasks registration message
+     */
     private @NotNull String getRegistrationMessage() {
         final int registered = this.taskTypeManager.getRegistered();
         final int skipped = this.taskTypeManager.getSkipped();
-        final int unsupported = this.taskTypeManager.getUnsupported();
+        final int unsupported = Boolean.getBoolean("Quests.ShowUnsupportedCount") ? this.taskTypeManager.getUnsupported() : 0;
 
         final StringBuilder sb = new StringBuilder();
         sb.append(registered).append(" task types have been registered");
@@ -582,7 +624,7 @@ public class BukkitQuestsPlugin extends JavaPlugin implements Quests {
 
     @Override
     public void reloadQuests() {
-        if (this.reloadBaseConfiguration()) {
+        if (this.reloadBaseConfiguration(false)) {
             BukkitQuestsLoader questsLoader = new BukkitQuestsLoader(this);
             questsLoader.loadQuestItems(new File(super.getDataFolder() + File.separator + "items"));
             configProblems = questsLoader.loadQuests(new File(super.getDataFolder() + File.separator + "quests"));
@@ -600,51 +642,87 @@ public class BukkitQuestsPlugin extends JavaPlugin implements Quests {
         }
     }
 
-    public QuestItem getConfiguredQuestItem(String path, ConfigurationSection config, ItemGetter.Filter... excludes) {
-        if (config.contains(path + ".quest-item")) {
-            return questItemRegistry.getItem(config.getString(path + ".quest-item"));
+    public @NotNull QuestItem getConfiguredQuestItem(final @NotNull String path, final @NotNull ConfigurationSection config, final @NotNull ItemGetter.Filter @NotNull ... excludes) {
+        final String questItemId = config.getString(path + ".quest-item");
+
+        if (questItemId != null) {
+            final QuestItem questItem = this.questItemRegistry.getItem(questItemId);
+
+            if (questItem != null) {
+                return questItem;
+            }
         }
 
-        return new ParsedQuestItem("defined", null, getConfiguredItemStack(path, config, excludes));
+        return new ParsedQuestItem("defined", null, this.getItemStack(path, config, excludes));
     }
 
-    public ItemStack getConfiguredItemStack(String path, ConfigurationSection config, ItemGetter.Filter... excludes) {
-        return itemGetter.getItem(path, config, excludes);
+    public @NotNull ItemStack getConfiguredItemStack(final @NotNull String path, final @NotNull ConfigurationSection config, final @NotNull ItemGetter.Filter @NotNull ... excludes) {
+        final String questItemId = config.getString(path + ".quest-item");
+
+        if (questItemId != null) {
+            final QuestItem questItem = this.questItemRegistry.getItem(questItemId);
+
+            if (questItem != null) {
+                return questItem.getItemStack();
+            }
+        }
+
+        return this.itemGetter.getItem(path, config, excludes);
     }
 
-    private boolean reloadBaseConfiguration() {
-        this.validConfiguration = questsConfig.loadConfig();
+    public @NotNull ItemStack getItemStack(final @NotNull String path, final @NotNull ConfigurationSection config, final @NotNull ItemGetter.Filter @NotNull ... excludes) {
+        return this.itemGetter.getItem(path, config, excludes);
+    }
 
-        if (validConfiguration) {
-            int loggingLevel = questsConfig.getInt("options.verbose-logging-level", 2);
-            questsLogger.setServerLoggingLevel(QuestsLogger.LoggingLevel.fromNumber(loggingLevel));
-            boolean logHistoryEnabled = questsConfig.getBoolean("options.record-log-history", true);
-            logHistory.setEnabled(logHistoryEnabled);
+    private boolean reloadBaseConfiguration(final boolean initialLoad) {
+        this.validConfiguration = this.questsConfig.loadConfig();
 
-            switch (questsConfig.getString("quest-mode.mode", "normal").toLowerCase()) {
+        if (this.validConfiguration) {
+            final int loggingLevelNumber = this.questsConfig.getInt("options.verbose-logging-level", 2);
+            final QuestsLogger.LoggingLevel loggingLevel = QuestsLogger.LoggingLevel.fromNumber(loggingLevelNumber);
+            this.questsLogger.setServerLoggingLevel(loggingLevel);
+
+            final boolean logHistoryEnabled = this.questsConfig.getBoolean("options.record-log-history", true);
+            this.logHistory.setEnabled(logHistoryEnabled);
+
+            //noinspection SwitchStatementWithTooFewBranches
+            switch (this.questsConfig.getString("quest-mode.mode", "normal").toLowerCase()) {
                 default:
                 case "normal":
-                    questController = new NormalQuestController(this);
-                    //TODO the other one
+                    this.questController = new NormalQuestController(this);
+                    // TODO the other one
             }
 
-            long autoSaveInterval = this.getConfig().getLong("options.performance-tweaking.quest-autosave-interval", 12000);
-            try {
-                if (questAutoSaveTask != null) questAutoSaveTask.cancel();
-                questAutoSaveTask = serverScheduler.runTaskTimer(() -> new QuestsAutoSaveRunnable(this), autoSaveInterval, autoSaveInterval);
-            } catch (Exception ex) {
-                questsLogger.debug("Cannot cancel and restart quest autosave task");
+            // Don't do that on first load as the plugin will later call reloadQuests()
+            // in the onEnable() lambda which calls this method and makes it try to cancel
+            // task that has not been scheduled yet
+            if (!initialLoad) {
+                final long autoSaveInterval = this.getConfig().getLong("options.performance-tweaking.quest-autosave-interval", 12000);
+                try {
+                    if (this.questAutoSaveTask != null && !this.questAutoSaveTask.isCancelled()) {
+                        this.questAutoSaveTask.cancel();
+                    }
+                    this.questAutoSaveTask = this.serverScheduler.runTaskTimer(new QuestsAutoSaveRunnable(this), autoSaveInterval, autoSaveInterval);
+                } catch (final Exception e) {
+                    this.getLogger().log(Level.SEVERE, "Cannot cancel and restart quest autosave task", e);
+                }
+
+                final long queueExecuteInterval = this.getConfig().getLong("options.performance-tweaking.quest-queue-executor-interval", 1);
+                try {
+                    if (this.questQueuePollTask != null && !this.questQueuePollTask.isCancelled()) {
+                        this.questQueuePollTask.cancel();
+                    }
+                    this.questQueuePollTask = this.serverScheduler.runTaskTimer(this.questCompleter, queueExecuteInterval, queueExecuteInterval);
+                } catch (final Exception e) {
+                    this.getLogger().log(Level.SEVERE, "Could not cancel and restart queue executor task", e);
+                }
             }
 
-            long queueExecuteInterval = this.getConfig().getLong("options.performance-tweaking.quest-queue-executor-interval", 1);
-            try {
-                if (questQueuePollTask != null) questQueuePollTask.cancel();
-                questQueuePollTask = serverScheduler.runTaskTimer(questCompleter, queueExecuteInterval, queueExecuteInterval);
-            } catch (Exception ex) {
-                questsLogger.debug("Cannot cancel and restart queue executor task");
-            }
+            // Set number formats to be used
+            FormatUtils.setNumberFormats(this);
         }
-        return validConfiguration;
+
+        return this.validConfiguration;
     }
 
     private void generateConfigurations() {
@@ -755,6 +833,12 @@ public class BukkitQuestsPlugin extends JavaPlugin implements Quests {
     }
 
     private void setItemGetter() {
+        // Spigot 1.20.5+
+        if (CompatUtils.classWithMethodExists("org.bukkit.inventory.meta.ItemMeta", "setEnchantmentGlintOverride", Boolean.class)) {
+            itemGetter = new ItemGetter20(this);
+            return;
+        }
+
         // Spigot 1.14+
         if (CompatUtils.classWithMethodExists("org.bukkit.inventory.meta.ItemMeta", "setCustomModelData", Integer.class)) {
             itemGetter = new ItemGetter14(this);
@@ -826,6 +910,10 @@ public class BukkitQuestsPlugin extends JavaPlugin implements Quests {
         return playerBlockTrackerHook;
     }
 
+    public @NotNull AbstractVaultHook getVaultHook() {
+        return this.vaultHook;
+    }
+
     public @Nullable AbstractWildStackerHook getWildStackerHook() {
         return wildStackerHook;
     }
@@ -878,6 +966,6 @@ public class BukkitQuestsPlugin extends JavaPlugin implements Quests {
 
     @Override
     public void reloadConfig() {
-        this.reloadBaseConfiguration();
+        this.reloadBaseConfiguration(false);
     }
 }

@@ -28,18 +28,17 @@ import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.material.Colorable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
-@SuppressWarnings("deprecation")
+@SuppressWarnings({"deprecation", "BooleanMethodIsAlwaysInverted"})
 public class TaskUtils {
 
     public static final String TASK_ATTRIBUTION_STRING = "<built-in>";
@@ -73,6 +72,11 @@ public class TaskUtils {
         return true;
     }
 
+    public static boolean doesConfigStringListExist(final @NotNull Task task, final @NotNull String key) {
+        final Object configObject = task.getConfigValue(key);
+        return configObject instanceof List || configObject instanceof String;
+    }
+
     @SuppressWarnings({"rawtypes", "unchecked"})
     public static @Nullable List<String> getConfigStringList(Task task, String key) {
         Object configObject = task.getConfigValue(key);
@@ -80,6 +84,18 @@ public class TaskUtils {
             return List.copyOf(list);
         } else if (configObject instanceof String s){
             return List.of(s);
+        } else {
+            return null;
+        }
+    }
+
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    public static @Nullable List<Integer> getConfigIntegerList(Task task, String key) {
+        Object configObject = task.getConfigValue(key);
+        if (configObject instanceof List list) {
+            return List.copyOf(list);
+        } else if (configObject instanceof Integer i){
+            return List.of(i);
         } else {
             return null;
         }
@@ -352,44 +368,6 @@ public class TaskUtils {
         return false;
     }
 
-    public static boolean matchColorable(@NotNull BukkitTaskType type, @NotNull PendingTask pendingTask, @NotNull Colorable colorable, @NotNull UUID player) {
-        return matchColorable(type, pendingTask, colorable, player, "color", "colors");
-    }
-
-    public static boolean matchColorable(@NotNull BukkitTaskType type, @NotNull PendingTask pendingTask, @NotNull Colorable colorable, @NotNull UUID player, @NotNull String stringKey, @NotNull String listKey) {
-        Task task = pendingTask.task;
-
-        DyeColor colorableColor = colorable.getColor();
-
-        List<String> checkColors = TaskUtils.getConfigStringList(task, task.getConfigValues().containsKey(stringKey) ? stringKey : listKey);
-        if (checkColors == null) {
-            return true;
-        } else if (checkColors.isEmpty()) {
-            return colorableColor == null;
-        }
-
-        if (colorableColor == null) {
-            return false;
-        }
-
-        DyeColor color;
-
-        for (String colorName : checkColors) {
-            color = DyeColor.valueOf(colorName);
-
-            type.debug("Checking against color " + color, pendingTask.quest.getId(), task.getId(), player);
-
-            if (color == colorableColor) {
-                type.debug("Color match", pendingTask.quest.getId(), task.getId(), player);
-                return true;
-            } else {
-                type.debug("Color mismatch", pendingTask.quest.getId(), task.getId(), player);
-            }
-        }
-
-        return false;
-    }
-
     public static boolean matchEntity(@NotNull BukkitTaskType type, @NotNull PendingTask pendingTask, @NotNull Entity entity, @NotNull UUID player) {
         return matchEntity(type, pendingTask, entity, player, "mob", "mobs");
     }
@@ -434,53 +412,55 @@ public class TaskUtils {
 
     static {
         try {
-            getEntitySpawnReasonMethod = Entity.class.getMethod("getEntitySpawnReason");
-        } catch (NoSuchMethodException ignored) {
+            TaskUtils.getEntitySpawnReasonMethod = Entity.class.getMethod("getEntitySpawnReason");
+        } catch (final NoSuchMethodException ignored) {
             // server version cannot support the method (doesn't work on Spigot)
         }
     }
 
-    public static boolean matchSpawnReason(@NotNull BukkitTaskType type, @NotNull PendingTask pendingTask, @NotNull Entity entity, @NotNull UUID player) {
-        return matchSpawnReason(type, pendingTask, entity, player, "spawn-reason", "spawn-reasons");
-    }
+    public static boolean matchSpawnReason(final @NotNull BukkitTaskType type, final @NotNull PendingTask pendingTask, final @NotNull Entity entity,
+                                           final @NotNull UUID player) {
+        if (TaskUtils.getEntitySpawnReasonMethod == null) {
+            type.debug("Spawn reason is specified but the server software doesn't have the method necessary to get it", pendingTask.quest.getId(), pendingTask.task.getId(), player);
 
-    public static boolean matchSpawnReason(@NotNull BukkitTaskType type, @NotNull PendingTask pendingTask, @NotNull Entity entity, @NotNull UUID player, @NotNull String stringKey, @NotNull String listKey) {
-        Task task = pendingTask.task;
-
-        List<String> checkSpawnReasons = TaskUtils.getConfigStringList(task, task.getConfigValues().containsKey(stringKey) ? stringKey : listKey);
-        if (checkSpawnReasons == null) {
-            return true;
-        } else if (checkSpawnReasons.isEmpty()) {
-            return false;
-        }
-
-        if (getEntitySpawnReasonMethod == null) {
-            type.debug("Spawn reason is specified but the server software doesn't have the method necessary to get it", pendingTask.quest.getId(), task.getId(), player);
-
-            // it is supported only on Paper so we simply ignore it
+            // it is supported only on Paper, so we simply ignore it
             return true;
         }
 
-        CreatureSpawnEvent.SpawnReason spawnReason;
+        final CreatureSpawnEvent.SpawnReason spawnReason;
         try {
-            spawnReason = (CreatureSpawnEvent.SpawnReason) getEntitySpawnReasonMethod.invoke(entity);
-        } catch (IllegalAccessException | InvocationTargetException e) {
+            spawnReason = (CreatureSpawnEvent.SpawnReason) TaskUtils.getEntitySpawnReasonMethod.invoke(entity);
+        } catch (final IllegalAccessException | InvocationTargetException e) {
             // it should never happen
             return false;
         }
 
-        CreatureSpawnEvent.SpawnReason reason;
+        return TaskUtils.matchEnum(CreatureSpawnEvent.SpawnReason.class, type, pendingTask, spawnReason, player, "spawn-reason", "spawn-reasons");
+    }
 
-        for (String spawnReasonName : checkSpawnReasons) {
-            reason = CreatureSpawnEvent.SpawnReason.valueOf(spawnReasonName);
+    public static <E extends Enum<E>> boolean matchEnum(final @NotNull Class<E> enumClass, final @NotNull BukkitTaskType type, final @NotNull PendingTask pendingTask,
+                                                        final @Nullable E enumValue, final @NotNull UUID player, final @NotNull String stringKey, final @NotNull String listKey) {
+        final Task task = pendingTask.task;
 
-            type.debug("Checking against spawn reason " + reason, pendingTask.quest.getId(), task.getId(), player);
+        final List<String> checkValueStrings = TaskUtils.getConfigStringList(task, task.getConfigValues().containsKey(stringKey) ? stringKey : listKey);
+        if (checkValueStrings == null) {
+            return true;
+        } else if (checkValueStrings.isEmpty()) {
+            return enumValue == null;
+        }
 
-            if (reason == spawnReason) {
-                type.debug("Spawn reason match", pendingTask.quest.getId(), task.getId(), player);
+        E checkValue;
+
+        for (final String checkValueString : checkValueStrings) {
+            checkValue = Enum.valueOf(enumClass, checkValueString);
+
+            type.debug("Checking against enum value " + checkValue, pendingTask.quest.getId(), task.getId(), player);
+
+            if (checkValue == enumValue) {
+                type.debug("Enum value match", pendingTask.quest.getId(), task.getId(), player);
                 return true;
             } else {
-                type.debug("Spawn reason mismatch", pendingTask.quest.getId(), task.getId(), player);
+                type.debug("Enum value mismatch", pendingTask.quest.getId(), task.getId(), player);
             }
         }
 
@@ -510,6 +490,9 @@ public class TaskUtils {
         public abstract boolean matches(@NotNull String str1, @NotNull String str2, boolean ignoreCase);
     }
 
+    /**
+     * @param legacyColor whether {@link Chat#legacyColor(String)} method ought to be used on {@code string} before the comparison
+     */
     public static boolean matchString(@NotNull BukkitTaskType type, @NotNull PendingTask pendingTask, @Nullable String string, @NotNull UUID player, @NotNull String stringKey, @NotNull String listKey, boolean legacyColor, @NotNull String matchModeKey, boolean ignoreCase) {
         Task task = pendingTask.task;
 
@@ -553,6 +536,9 @@ public class TaskUtils {
         return false;
     }
 
+    /**
+     * @param legacyColor whether {@link Chat#legacyColor(String)} method ought to be used on {@code strings} before the comparison
+     */
     public static boolean matchAnyString(@NotNull BukkitTaskType type, @NotNull PendingTask pendingTask, @NotNull String @Nullable [] strings, @NotNull UUID player, final @NotNull String stringKey, final @NotNull String listKey, boolean legacyColor, @NotNull String matchModeKey, boolean ignoreCase) {
         Task task = pendingTask.task;
 
@@ -1082,7 +1068,7 @@ public class TaskUtils {
      * @param paths a list of valid paths for task
      * @return config validator
      */
-    public static TaskType.ConfigValidator useAcceptedValuesConfigValidator(TaskType type, List<String> acceptedValues, String... paths) {
+    public static TaskType.ConfigValidator useAcceptedValuesConfigValidator(TaskType type, Collection<String> acceptedValues, String... paths) {
         return (config, problems) -> {
             for (String path : paths) {
                 Object configObject = config.get(path);

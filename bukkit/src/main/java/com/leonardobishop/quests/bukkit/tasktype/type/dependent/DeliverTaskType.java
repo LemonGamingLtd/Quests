@@ -14,6 +14,8 @@ import com.leonardobishop.quests.common.quest.Quest;
 import com.leonardobishop.quests.common.quest.Task;
 import org.bukkit.entity.Player;
 
+import java.util.List;
+
 public abstract class DeliverTaskType<T> extends BukkitTaskType {
 
     private final Table<String, String, QuestItem> fixedQuestItemCache = HashBasedTable.create();
@@ -43,7 +45,7 @@ public abstract class DeliverTaskType<T> extends BukkitTaskType {
         fixedQuestItemCache.clear();
     }
 
-    public abstract T getNPCId(Task task);
+    public abstract List<T> getNPCId(Task task);
 
     public void checkInventory(Player player, T npcId, String npcName, long delay, BukkitQuestsPlugin plugin) {
         if (player.hasMetadata("NPC") || !player.isOnline()) return;
@@ -69,9 +71,9 @@ public abstract class DeliverTaskType<T> extends BukkitTaskType {
 
             super.debug("Player clicked NPC", quest.getId(), task.getId(), player.getUniqueId());
 
-            T configNPCId = getNPCId(task);
+            List<T> configNPCId = getNPCId(task);
             if (configNPCId != null) {
-                if (!npcId.equals(configNPCId)) {
+                if (!configNPCId.contains(npcId)) {
                     super.debug("NPC id " + npcId + " does not match required id, continuing...", quest.getId(), task.getId(), player.getUniqueId());
                     continue;
                 }
@@ -95,7 +97,6 @@ public abstract class DeliverTaskType<T> extends BukkitTaskType {
                 }
             }
 
-            boolean remove = TaskUtils.getConfigBoolean(task, "remove-items-when-complete");
             boolean allowPartial = TaskUtils.getConfigBoolean(task, "allow-partial-completion");
 
             QuestItem qi;
@@ -140,6 +141,8 @@ public abstract class DeliverTaskType<T> extends BukkitTaskType {
                 if (progress >= amount) {
                     taskProgress.setCompleted(true);
                     super.debug("Marking task as complete", quest.getId(), task.getId(), player.getUniqueId());
+
+                    boolean remove = TaskUtils.getConfigBoolean(task, "remove-items-when-complete");
 
                     if (remove) {
                         TaskUtils.removeItemsInSlots(player, amountPerSlot, progress);

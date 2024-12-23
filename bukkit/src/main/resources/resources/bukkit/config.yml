@@ -51,6 +51,10 @@ options:
     # See https://hub.spigotmc.org/javadocs/spigot/org/bukkit/boss/BarStyle.html
     style:
       '0.0': SOLID # for 0.0 and higher progress values (progress is always between 0.0 and 1.0)
+    # Max amount of active task progress boss bars at once
+    limit: -1
+    # Whether new boss bar should be added and make another (the least progress one - if exists) disappear
+    replace-on-limit: true
   # Enable/disable ActionBar
   actionbar:
     progress: false
@@ -120,6 +124,8 @@ options:
   # Otherwise, the bar will not appear at all.
   use-progress-as-fallback: true
   # PlayerBlockTracker class to be used with the hook
+  # Original solution: https://github.com/Flo0/PlayerBlockTracker
+  # Modern alternative: https://github.com/Krakenied/BlockTracker
   playerblocktracker-class-name: "com.gestankbratwurst.playerblocktracker.PlayerBlockTracker"
   # How frequently placeholderapi_evaluate task placeholders will be refreshed (def=30 - 1.5s)
   # (multiply SECONDS by 20 to get the number of ticks)
@@ -188,6 +194,19 @@ options:
 quest-mode:
   mode: "NORMAL" # More modes are a work in progress
 
+# Most common locales:
+# de-DE: 1.234,56
+# en-US: 1,234.56
+# fr-ch: 1'234,56
+number-formats:
+  # decimal format used for processing float, double and BigDecimal placeholders
+  floating:
+    format: '#,##0.00'
+    locale: 'en-US'
+  # decimal format used for processing int, long and BigInteger placeholders
+  integral:
+    format: '#,##0'
+    locale: 'en-US'
 
 # -----------------------------------------------------------
 #  Global task configuration

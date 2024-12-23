@@ -112,7 +112,6 @@ public final class InventoryTaskType extends BukkitTaskType {
 
             super.debug("Inventory check triggered", quest.getId(), task.getId(), player.getUniqueId());
 
-            boolean remove = TaskUtils.getConfigBoolean(task, "remove-items-when-complete");
             boolean allowPartial = TaskUtils.getConfigBoolean(task, "allow-partial-completion");
 
             QuestItem qi;
@@ -151,12 +150,23 @@ public final class InventoryTaskType extends BukkitTaskType {
                 }
             } else {
                 int progress = Math.min(amountPerSlot[36], amount);
+                int oldProgress = TaskUtils.getIntegerTaskProgress(taskProgress);
+
+                if (progress == oldProgress) {
+                    // no need to update, also no need to check for progress >= amount
+                    // as quest completer will handle that properly after some time
+                    // we don't want to send track advancement for each inventory op too
+                    continue;
+                }
+
                 taskProgress.setProgress(progress);
                 super.debug("Updating task progress (now " + progress + ")", quest.getId(), task.getId(), player.getUniqueId());
 
                 if (progress >= amount) {
                     taskProgress.setCompleted(true);
                     super.debug("Marking task as complete", quest.getId(), task.getId(), player.getUniqueId());
+
+                    boolean remove = TaskUtils.getConfigBoolean(task, "remove-items-when-complete");
 
                     if (remove) {
                         TaskUtils.removeItemsInSlots(player, amountPerSlot, progress);
