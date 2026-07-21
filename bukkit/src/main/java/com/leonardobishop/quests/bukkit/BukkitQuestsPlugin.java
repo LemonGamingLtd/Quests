@@ -123,8 +123,8 @@ import com.leonardobishop.quests.bukkit.tasktype.type.dependent.PlayerPointsEarn
 import com.leonardobishop.quests.bukkit.tasktype.type.dependent.PyroFishingProFishingTaskType;
 import com.leonardobishop.quests.bukkit.tasktype.type.dependent.ServerNPCDeliverTaskType;
 import com.leonardobishop.quests.bukkit.tasktype.type.dependent.ServerNPCInteractTaskType;
-import com.leonardobishop.quests.bukkit.tasktype.type.dependent.ShopGUIPlusBuyTaskType;
-import com.leonardobishop.quests.bukkit.tasktype.type.dependent.ShopGUIPlusSellTaskType;
+import com.leonardobishop.quests.bukkit.tasktype.type.dependent.LGShopBuyTaskType;
+import com.leonardobishop.quests.bukkit.tasktype.type.dependent.LGShopSellTaskType;
 import com.leonardobishop.quests.bukkit.tasktype.type.dependent.SuperiorSkyblockLevelType;
 import com.leonardobishop.quests.bukkit.tasktype.type.dependent.SuperiorSkyblockWorthType;
 import com.leonardobishop.quests.bukkit.tasktype.type.dependent.VotingPluginVoteType;
@@ -492,8 +492,8 @@ public class BukkitQuestsPlugin extends JavaPlugin implements Quests {
             taskTypeManager.registerTaskType(() -> new PyroFishingProFishingTaskType(this), () -> CompatUtils.isPluginEnabled("PyroFishingPro") && CompatUtils.classExists("me.arsmagica.API.PyroFishCatchEvent"));
             taskTypeManager.registerTaskType(() -> new ServerNPCDeliverTaskType(this), () -> CompatUtils.isPluginEnabled("ServerNPC") && CompatUtils.classWithMethodExists("com.isnakebuzz.npcapi.entities.SnakeNPC", "getSettings"));
             taskTypeManager.registerTaskType(() -> new ServerNPCInteractTaskType(this), () -> CompatUtils.isPluginEnabled("ServerNPC") && CompatUtils.classWithMethodExists("com.isnakebuzz.npcapi.entities.SnakeNPC", "getSettings"));
-            taskTypeManager.registerTaskType(() -> new ShopGUIPlusBuyTaskType(this), () -> CompatUtils.isPluginEnabled("ShopGUIPlus")); // not tested
-            taskTypeManager.registerTaskType(() -> new ShopGUIPlusSellTaskType(this), () -> CompatUtils.isPluginEnabled("ShopGUIPlus")); // not tested
+            taskTypeManager.registerTaskType(() -> new LGShopBuyTaskType(this), () -> CompatUtils.isPluginEnabled("LGShop"));
+            taskTypeManager.registerTaskType(() -> new LGShopSellTaskType(this), () -> CompatUtils.isPluginEnabled("LGShop"));
             taskTypeManager.registerTaskType(() -> new SuperiorSkyblockLevelType(this), () -> CompatUtils.isPluginEnabled("SuperiorSkyblock2")); // not tested
             taskTypeManager.registerTaskType(() -> new SuperiorSkyblockWorthType(this), () -> CompatUtils.isPluginEnabled("SuperiorSkyblock2")); // not tested
             taskTypeManager.registerTaskType(() -> new uSkyBlockLevelTaskType(this), () -> CompatUtils.isPluginEnabled("uSkyBlock"));

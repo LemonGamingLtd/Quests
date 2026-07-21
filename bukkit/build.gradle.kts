@@ -13,6 +13,13 @@ tasks.withType<ProcessResources> {
 }
 
 repositories {
+    mavenLocal()
+    maven("https://repo.lemongaming.ltd/repository/maven-public/") {
+        credentials {
+            username = providers.gradleProperty("lgNexusUser").get()
+            password = providers.gradleProperty("lgNexusPass").get()
+        }
+    }
     // Paper
     maven("https://repo.papermc.io/repository/maven-public/")
     // Paper (adventure-bom snapshots)
@@ -107,8 +114,8 @@ dependencies {
     compileOnlyPlugin("org.black_ixx:playerpoints:3.2.5")
     // SCore
     compileOnlyPlugin("com.github.Ssomar-Developement:SCore:4.24.3.5")
-    // ShopGUIPlus
-    compileOnlyPlugin("com.github.brcdev-minecraft:shopgui-api:3.0.0")
+    // LGShop
+    compileOnlyPlugin("ltd.lemongaming:LGShop:0.1.0-SNAPSHOT")
     // Slimefun4
     compileOnlyPlugin("com.github.Slimefun:Slimefun4:RC-37")
     // SuperiorSkyblock2
