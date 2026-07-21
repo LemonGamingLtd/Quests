@@ -38,13 +38,11 @@ repositories {
     maven("https://nexus.phoenixdevt.fr/repository/maven-public/")
     // MythicMobs 4, MythicMobs 5
     maven("https://mvn.lumine.io/repository/maven-public/")
-    // NuVotifier
-    maven("https://repo.leonardobishop.com/releases/")
     // Oraxen
     maven("https://repo.oraxen.com/releases")
     // PlaceholderAPI
     maven("https://repo.extendedclip.com/releases")
-    // CustomFishing, ItemsAdder, SCore, ShopGUIPlus, Slimefun4, Vault
+    // ItemsAdder, SCore, ShopGUIPlus, Slimefun4, Vault
     maven("https://jitpack.io/")
     // PlayerPoints
     maven("https://repo.rosewooddev.io/repository/public/")
@@ -81,8 +79,6 @@ dependencies {
     compileOnlyPlugin("net.citizensnpcs:citizensapi:2.0.30-SNAPSHOT")
     // CoreProtect
     compileOnlyPlugin("net.coreprotect:coreprotect:21.2")
-    // CustomFishing
-    compileOnlyPlugin("com.github.Xiao-MoMi:Custom-Fishing:2.2.20")
     // EcoBosses, EcoMobs
     compileOnlyPlugin("com.willfp:EcoBosses:9.14.0")
     compileOnlyPlugin("com.willfp:EcoMobs:10.0.0-b1")
@@ -104,8 +100,6 @@ dependencies {
     compileOnlyPlugin("io.lumine.xikage:MythicMobs:4.12.0")
     // MythicMobs 5
     compileOnlyPlugin("io.lumine:Mythic-Dist:5.2.0")
-    // NuVotifier
-    compileOnlyPlugin("com.vexsoftware:NuVotifier:2.7.3")
     // Oraxen
     compileOnlyPlugin("io.th0rgal:oraxen:1.175.0")
     // PlaceholderAPI

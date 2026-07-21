@@ -108,7 +108,6 @@ import com.leonardobishop.quests.bukkit.tasktype.type.dependent.ASkyBlockLevelTa
 import com.leonardobishop.quests.bukkit.tasktype.type.dependent.BentoBoxLevelTaskType;
 import com.leonardobishop.quests.bukkit.tasktype.type.dependent.CitizensDeliverTaskType;
 import com.leonardobishop.quests.bukkit.tasktype.type.dependent.CitizensInteractTaskType;
-import com.leonardobishop.quests.bukkit.tasktype.type.dependent.CustomFishingFishingTaskType;
 import com.leonardobishop.quests.bukkit.tasktype.type.dependent.EcoBossesKillingTaskType;
 import com.leonardobishop.quests.bukkit.tasktype.type.dependent.EcoMobsKillingTaskType;
 import com.leonardobishop.quests.bukkit.tasktype.type.dependent.EssentialsBalanceTaskType;
@@ -116,7 +115,6 @@ import com.leonardobishop.quests.bukkit.tasktype.type.dependent.EssentialsMoneyE
 import com.leonardobishop.quests.bukkit.tasktype.type.dependent.FabledSkyBlockLevelTaskType;
 import com.leonardobishop.quests.bukkit.tasktype.type.dependent.IridiumSkyblockValueTaskType;
 import com.leonardobishop.quests.bukkit.tasktype.type.dependent.MythicMobsKillingTaskType;
-import com.leonardobishop.quests.bukkit.tasktype.type.dependent.NuVotifierVoteTaskType;
 import com.leonardobishop.quests.bukkit.tasktype.type.dependent.PinataPartyHitTaskType;
 import com.leonardobishop.quests.bukkit.tasktype.type.dependent.PlaceholderAPIEvaluateTaskType;
 import com.leonardobishop.quests.bukkit.tasktype.type.dependent.PlayerPointsEarnTaskType;
@@ -480,7 +478,6 @@ public class BukkitQuestsPlugin extends JavaPlugin implements Quests {
             taskTypeManager.registerTaskType(() -> new BentoBoxLevelTaskType(this), () -> CompatUtils.isPluginEnabled("BentoBox") && CompatUtils.classExists("world.bentobox.level.events.IslandLevelCalculatedEvent"));
             taskTypeManager.registerTaskType(() -> new CitizensDeliverTaskType(this), () -> CompatUtils.isPluginEnabled("Citizens"));
             taskTypeManager.registerTaskType(() -> new CitizensInteractTaskType(this), () -> CompatUtils.isPluginEnabled("Citizens"));
-            taskTypeManager.registerTaskType(() -> new CustomFishingFishingTaskType(this), () -> CompatUtils.isPluginEnabled("CustomFishing"));
             taskTypeManager.registerTaskType(() -> new EcoBossesKillingTaskType(this), () -> CompatUtils.isPluginEnabled("EcoBosses"));
             taskTypeManager.registerTaskType(() -> new EcoMobsKillingTaskType(this), () -> CompatUtils.isPluginEnabled("EcoMobs"));
             taskTypeManager.registerTaskType(() -> new EssentialsBalanceTaskType(this), () -> CompatUtils.isPluginEnabled("Essentials"));
@@ -497,7 +494,6 @@ public class BukkitQuestsPlugin extends JavaPlugin implements Quests {
             taskTypeManager.registerTaskType(() -> new SuperiorSkyblockLevelType(this), () -> CompatUtils.isPluginEnabled("SuperiorSkyblock2")); // not tested
             taskTypeManager.registerTaskType(() -> new SuperiorSkyblockWorthType(this), () -> CompatUtils.isPluginEnabled("SuperiorSkyblock2")); // not tested
             taskTypeManager.registerTaskType(() -> new uSkyBlockLevelTaskType(this), () -> CompatUtils.isPluginEnabled("uSkyBlock"));
-            taskTypeManager.registerTaskType(() -> new NuVotifierVoteTaskType(this), () -> CompatUtils.isPluginEnabled("Votifier")); // not tested
             taskTypeManager.registerTaskType(() -> new VotingPluginVoteType(this), () -> CompatUtils.isPluginEnabled("VotingPlugin")); // not tested
             taskTypeManager.registerTaskType(() -> new ZNPCsPlusDeliverTaskType(this), () -> CompatUtils.isPluginEnabled("ZNPCsPlus"));
             taskTypeManager.registerTaskType(() -> new ZNPCsPlusInteractTaskType(this), () -> CompatUtils.isPluginEnabled("ZNPCsPlus"));

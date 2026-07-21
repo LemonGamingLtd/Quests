@@ -12,7 +12,6 @@ softdepend:
 - Citizens
 - CMI
 - CoreProtect
-- CustomFishing
 - EcoBosses
 - EcoMobs
 - Essentials
@@ -30,7 +29,6 @@ softdepend:
 - SuperiorSkyblock2
 - uSkyBlock
 - Vault
-- Votifier
 - VotingPlugin
 - WildStacker
 - ZNPCsPlus
