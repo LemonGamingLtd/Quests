@@ -12,7 +12,6 @@ softdepend:
 - Citizens
 - CMI
 - CoreProtect
-- CustomFishing
 - EcoBosses
 - EcoMobs
 - Essentials
@@ -26,11 +25,10 @@ softdepend:
 - PlayerPoints
 - PyroFishingPro
 - ServerNPC
-- ShopGUIPlus
+- LGShop
 - SuperiorSkyblock2
 - uSkyBlock
 - Vault
-- Votifier
 - VotingPlugin
 - WildStacker
 - ZNPCsPlus

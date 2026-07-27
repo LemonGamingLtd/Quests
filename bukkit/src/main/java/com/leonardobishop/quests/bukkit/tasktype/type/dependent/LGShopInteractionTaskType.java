@@ -2,59 +2,39 @@ package com.leonardobishop.quests.bukkit.tasktype.type.dependent;
 
 import com.leonardobishop.quests.bukkit.BukkitQuestsPlugin;
 import com.leonardobishop.quests.bukkit.tasktype.BukkitTaskType;
-import com.leonardobishop.quests.bukkit.util.CompatUtils;
 import com.leonardobishop.quests.bukkit.util.TaskUtils;
 import com.leonardobishop.quests.bukkit.util.constraint.TaskConstraintSet;
 import com.leonardobishop.quests.common.player.QPlayer;
 import com.leonardobishop.quests.common.player.questprogressfile.TaskProgress;
 import com.leonardobishop.quests.common.quest.Quest;
 import com.leonardobishop.quests.common.quest.Task;
-import net.brcdev.shopgui.event.ShopPostTransactionEvent;
-import net.brcdev.shopgui.shop.Shop;
-import net.brcdev.shopgui.shop.ShopTransactionResult;
+import ltd.lemongaming.lgshop.api.Shop;
+import ltd.lemongaming.lgshop.api.ShopItem;
+import ltd.lemongaming.lgshop.api.TransactionResult;
+import ltd.lemongaming.lgshop.api.event.ShopPostTransactionEvent;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.jetbrains.annotations.NotNull;
 
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-
-public abstract class ShopGUIPlusInteractionTaskType extends BukkitTaskType {
+public abstract class LGShopInteractionTaskType extends BukkitTaskType {
 
     private final BukkitQuestsPlugin plugin;
-    private Method getShopItemMethod;
-    private Method getShopMethod;
-    private Method getIdMethod;
 
-    public ShopGUIPlusInteractionTaskType(BukkitQuestsPlugin plugin, @NotNull String type, String author, String description, String... aliases) {
+    public LGShopInteractionTaskType(BukkitQuestsPlugin plugin, @NotNull String type, String author, String description, String... aliases) {
         super(type, author, description, aliases);
         this.plugin = plugin;
 
         super.addConfigValidator(TaskUtils.useRequiredConfigValidator(this, "amount"));
         super.addConfigValidator(TaskUtils.useIntegerConfigValidator(this, "amount"));
-
-        try {
-            Class<?> clazz = Class.forName("net.brcdev.shopgui.shop.ShopTransactionResult");
-            this.getShopItemMethod = clazz.getDeclaredMethod("getShopItem");
-
-            Class<?> returnType = this.getShopItemMethod.getReturnType();
-            this.getShopMethod = returnType.getDeclaredMethod("getShop");
-            this.getIdMethod = returnType.getDeclaredMethod("getId");
-
-            return;
-        } catch (ClassNotFoundException | NoSuchMethodException ignored) { }
-
-        plugin.getLogger().severe("Failed to register event handler for ShopGUIPlus task type!");
-        plugin.getLogger().severe("ShopGUIPlus version detected: " + CompatUtils.getPluginVersion("ShopGUIPlus"));
     }
 
-    public abstract boolean isCorrectInteraction(ShopTransactionResult result);
+    public abstract boolean isCorrectInteraction(TransactionResult result);
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onShopPostTransaction(ShopPostTransactionEvent event) {
-        ShopTransactionResult result = event.getResult();
-        if (result.getResult() != ShopTransactionResult.ShopTransactionResultType.SUCCESS) {
+        TransactionResult result = event.getResult();
+        if (result.getResult() != TransactionResult.ResultType.SUCCESS) {
             return;
         }
 
@@ -68,24 +48,14 @@ public abstract class ShopGUIPlusInteractionTaskType extends BukkitTaskType {
             return;
         }
 
-        Shop shop;
-        String itemId;
-        String shopId;
-
-        try {
-            Object shopItem = getShopItemMethod.invoke(result);
-            shop = (Shop) getShopMethod.invoke(shopItem);
-            itemId = (String) getIdMethod.invoke(shopItem);
-            if (shop != null) {
-                shopId = shop.getId();
-            } else {
-                shopId = null;
-            }
-        } catch (InvocationTargetException | IllegalAccessException e) {
-            // It should never happen
+        ShopItem shopItem = result.getShopItem();
+        if (shopItem == null) {
             return;
         }
 
+        Shop shop = shopItem.getShop();
+        String shopId = shop != null ? shop.getId() : null;
+        String itemId = shopItem.getId();
         int amountBought = result.getAmount();
 
         for (TaskUtils.PendingTask pendingTask : TaskUtils.getApplicableTasks(player, qPlayer, this, TaskConstraintSet.ALL)) {
@@ -93,7 +63,7 @@ public abstract class ShopGUIPlusInteractionTaskType extends BukkitTaskType {
             Task task = pendingTask.task();
             TaskProgress taskProgress = pendingTask.taskProgress();
 
-            super.debug("Player traded item (shop = " + shopId + ", item id = " + itemId + ", action = " + result.getShopAction().toString() + ")", quest.getId(), task.getId(), player.getUniqueId());
+            super.debug("Player traded item (shop = " + shopId + ", item id = " + itemId + ", action = " + result.getType() + ")", quest.getId(), task.getId(), player.getUniqueId());
 
             String taskShopId = (String) task.getConfigValue("shop-id");
             if (taskShopId == null || !taskShopId.equals(shopId)) {
