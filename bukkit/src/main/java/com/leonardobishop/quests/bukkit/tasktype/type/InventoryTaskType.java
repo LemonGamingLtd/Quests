@@ -113,6 +113,7 @@ public final class InventoryTaskType extends BukkitTaskType {
             super.debug("Inventory check triggered", quest.getId(), task.getId(), player.getUniqueId());
 
             boolean allowPartial = TaskUtils.getConfigBoolean(task, "allow-partial-completion");
+            int itemsTaken = 0;
 
             QuestItem qi;
             if ((qi = fixedQuestItemCache.get(quest.getId(), task.getId())) == null) {
@@ -138,6 +139,7 @@ public final class InventoryTaskType extends BukkitTaskType {
                 // We must ALWAYS remove items if partial completion is allowed
                 // https://github.com/LMBishop/Quests/issues/375
                 TaskUtils.removeItemsInSlots(player, amountPerSlot, total);
+                itemsTaken = total;
                 super.debug("Removing " + total + " items from inventory", quest.getId(), task.getId(), player.getUniqueId());
 
                 progress += total;
@@ -175,7 +177,7 @@ public final class InventoryTaskType extends BukkitTaskType {
                 }
             }
 
-            TaskUtils.sendTrackAdvancement(player, quest, task, pendingTask, amount);
+            TaskUtils.sendTrackAdvancement(player, quest, task, pendingTask, amount, itemsTaken);
         }
     }
 }

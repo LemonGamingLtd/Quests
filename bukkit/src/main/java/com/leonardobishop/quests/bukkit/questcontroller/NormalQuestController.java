@@ -148,6 +148,7 @@ public class NormalQuestController implements QuestController {
                     Chat.send(player, s, true);
                 }
                 SoundUtils.playSoundForPlayer(player, plugin.getQuestsConfig().getString("options.sounds.quest-start"));
+                plugin.getQuestFeedback().onStart(player, quest);
             }
             for (Task task : quest.getTasks()) {
                 try {
@@ -269,6 +270,7 @@ public class NormalQuestController implements QuestController {
                 player.sendMessage(Chat.legacyColor(s));
             }
             SoundUtils.playSoundForPlayer(player, plugin.getQuestsConfig().getString("options.sounds.quest-complete"));
+            plugin.getQuestFeedback().onComplete(player, qPlayer, quest);
         }
         if (this.config.getBoolean("options.allow-quest-track") && this.config.getBoolean("options.quest-autotrack")) {
             this.trackNextQuest(qPlayer, quest);
@@ -332,6 +334,7 @@ public class NormalQuestController implements QuestController {
                 player.sendMessage(Chat.legacyColor(s));
             }
             SoundUtils.playSoundForPlayer(player, plugin.getQuestsConfig().getString("options.sounds.quest-cancel"));
+            plugin.getQuestFeedback().forget(player, quest);
         }
         if (config.getBoolean("options.allow-quest-track")
                 && config.getBoolean("options.quest-autotrack")
@@ -373,6 +376,7 @@ public class NormalQuestController implements QuestController {
                 }
                 player.sendMessage(Chat.legacyColor(s));
             }
+            plugin.getQuestFeedback().forget(player, quest);
         }
         if (config.getBoolean("options.allow-quest-track")
                 && config.getBoolean("options.quest-autotrack")

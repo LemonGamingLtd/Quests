@@ -2,7 +2,9 @@ package com.leonardobishop.quests.bukkit;
 
 import com.leonardobishop.quests.bukkit.command.QuestsCommandSwitcher;
 import com.leonardobishop.quests.bukkit.config.BukkitQuestsConfig;
+import com.leonardobishop.quests.bukkit.feedback.QuestFeedback;
 import com.leonardobishop.quests.bukkit.config.BukkitQuestsLoader;
+import com.leonardobishop.quests.bukkit.hook.actionbar.ActionBar_Adventure;
 import com.leonardobishop.quests.bukkit.hook.actionbar.ActionBar_Nothing;
 import com.leonardobishop.quests.bukkit.hook.actionbar.ActionBar_Paper;
 import com.leonardobishop.quests.bukkit.hook.actionbar.ActionBar_Spigot;
@@ -207,6 +209,7 @@ public class BukkitQuestsPlugin extends JavaPlugin implements Quests {
     private QuestsTitle titleHandle;
     private QuestsBossBar bossBarHandle;
     private QuestsActionBar actionBarHandle;
+    private QuestFeedback questFeedback;
     private VersionSpecificHandler versionSpecificHandler;
 
     private LogHistory logHistory;
@@ -329,6 +332,9 @@ public class BukkitQuestsPlugin extends JavaPlugin implements Quests {
 
         // (actionbar)
         this.setActionBarHandle();
+
+        // (feedback)
+        this.questFeedback = new QuestFeedback(this);
 
         // (itemstacks)
         this.setItemGetter();
@@ -811,6 +817,14 @@ public class BukkitQuestsPlugin extends JavaPlugin implements Quests {
     }
 
     private void setActionBarHandle() {
+        // Paper 26.x removed sendActionBar(String), so prefer the Adventure method when it exists
+        try {
+            Player.class.getMethod("sendActionBar", Class.forName("net.kyori.adventure.text.Component"));
+            actionBarHandle = new ActionBar_Adventure();
+            return;
+        } catch (ClassNotFoundException | NoSuchMethodException ignored) {
+        }
+
         try {
             Player.class.getMethod("sendActionBar", String.class);
             actionBarHandle = new ActionBar_Paper();
@@ -819,7 +833,7 @@ public class BukkitQuestsPlugin extends JavaPlugin implements Quests {
         }
 
         try {
-            Class.forName("org.bukkit.entity.Player.Spigot").getMethod("sendMessage", ChatMessageType.class, BaseComponent.class);
+            Class.forName("org.bukkit.entity.Player$Spigot").getMethod("sendMessage", ChatMessageType.class, BaseComponent.class);
             actionBarHandle = new ActionBar_Spigot();
             return;
         } catch (ClassNotFoundException | NoSuchMethodException ignored) {
@@ -932,6 +946,10 @@ public class BukkitQuestsPlugin extends JavaPlugin implements Quests {
 
     public QuestsActionBar getActionBarHandle() {
         return actionBarHandle;
+    }
+
+    public QuestFeedback getQuestFeedback() {
+        return questFeedback;
     }
 
     public VersionSpecificHandler getVersionSpecificHandler() {

@@ -1,6 +1,9 @@
 package com.leonardobishop.quests.bukkit.menu;
 
 import com.leonardobishop.quests.bukkit.BukkitQuestsPlugin;
+import com.leonardobishop.quests.bukkit.config.BukkitQuestsConfig;
+import com.leonardobishop.quests.bukkit.menu.element.BackMenuElement;
+import com.leonardobishop.quests.bukkit.menu.element.CustomMenuElement;
 import com.leonardobishop.quests.bukkit.menu.element.MenuElement;
 import com.leonardobishop.quests.bukkit.menu.element.QuestMenuElement;
 import com.leonardobishop.quests.bukkit.util.chat.Chat;
@@ -28,7 +31,16 @@ public class StartedQMenu extends PaginatedQMenu {
             elements.add(new QuestMenuElement(plugin, quest, this));
         }
 
-        super.populate("custom-elements.started", elements, null);
+        BukkitQuestsConfig config = (BukkitQuestsConfig) plugin.getQuestsConfig();
+        if (elements.isEmpty() && plugin.getConfig().contains("gui.no-started-quests")) {
+            elements.add(new CustomMenuElement(plugin, owner.getPlayerUUID(), null, config.getItem("gui.no-started-quests")));
+        }
+
+        BackMenuElement backMenuElement = config.getBoolean("options.gui-started-back-button", false) && config.getBoolean("options.categories-enabled")
+                ? new BackMenuElement(config, owner.getPlayerUUID(), plugin.getMenuController(), new CategoryQMenu(plugin, owner))
+                : null;
+
+        super.populate("custom-elements.started", elements, backMenuElement);
     }
 
 }

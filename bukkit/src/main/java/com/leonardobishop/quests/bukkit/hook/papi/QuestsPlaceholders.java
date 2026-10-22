@@ -4,6 +4,7 @@ import com.leonardobishop.quests.bukkit.BukkitQuestsPlugin;
 import com.leonardobishop.quests.bukkit.menu.itemstack.QItemStack;
 import com.leonardobishop.quests.bukkit.util.FormatUtils;
 import com.leonardobishop.quests.bukkit.util.Messages;
+import com.leonardobishop.quests.bukkit.util.ProgressFormat;
 import com.leonardobishop.quests.bukkit.util.chat.Chat;
 import com.leonardobishop.quests.common.enums.QuestStartResult;
 import com.leonardobishop.quests.common.player.QPlayer;
@@ -100,6 +101,12 @@ public class QuestsPlaceholders extends PlaceholderExpansion implements Cacheabl
                     //TODO cache started quests somewhere, or make a effective started method
                     final List<Quest> listStarted = qPlayer.getEffectiveStartedQuests();
                     result = (args.length == 1 ? String.valueOf(listStarted.size()) : parseList(listStarted, args[1], split));
+                    break;
+                case "percent":
+                case "bar":
+                    final int allCount = plugin.getQuestManager().getQuests().size();
+                    final int completedCount = qPlayer.getQuestProgressFile().getAllQuestsFromProgress(QuestProgressFile.QuestsProgressFilter.COMPLETED_BEFORE).size();
+                    result = formatCompletion(args[0], completedCount, allCount);
                     break;
                 case "categories":
                     if (args.length == 1) {
@@ -281,6 +288,12 @@ public class QuestsPlaceholders extends PlaceholderExpansion implements Cacheabl
                                 final List<Quest> listStarted = getCategoryQuests(qPlayer, category, QuestProgressFile.QuestsProgressFilter.STARTED);
                                 result = (args.length == 2 ? String.valueOf(listStarted.size()) : parseList(listStarted, args[2], split));
                                 break;
+                            case "percent":
+                            case "bar":
+                                final int categoryAll = getCategoryQuests(qPlayer, category, QuestProgressFile.QuestsProgressFilter.ALL).size();
+                                final int categoryCompleted = getCategoryQuests(qPlayer, category, QuestProgressFile.QuestsProgressFilter.COMPLETED_BEFORE).size();
+                                result = formatCompletion(args[1], categoryCompleted, categoryAll);
+                                break;
                             default:
                                 return args[0] + "_" + args[1] + " is not a valid placeholder";
                         }
@@ -291,6 +304,11 @@ public class QuestsPlaceholders extends PlaceholderExpansion implements Cacheabl
             }
         }
         return (save ? cache(p.getName(), params, result) : result);
+    }
+
+    private String formatCompletion(String type, int completed, int all) {
+        final double fraction = all > 0 ? (double) completed / all : 0.0d;
+        return type.equalsIgnoreCase("bar") ? ProgressFormat.getBar(fraction) : String.valueOf(ProgressFormat.getPercent(fraction));
     }
 
     private String cache(String player, String params, String result) {

@@ -120,6 +120,11 @@ public enum Messages {
     }
 
     public static boolean send(String message, CommandSender target, String... substitutions) {
+        // an empty message in the config disables it instead of sending a blank line
+        if (message == null || message.isEmpty()) {
+            return false;
+        }
+
         Chat.send(target, message, true, substitutions);
         return true;
     }

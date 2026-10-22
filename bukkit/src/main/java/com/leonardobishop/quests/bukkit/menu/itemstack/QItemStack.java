@@ -3,6 +3,7 @@ package com.leonardobishop.quests.bukkit.menu.itemstack;
 import com.leonardobishop.quests.bukkit.BukkitQuestsPlugin;
 import com.leonardobishop.quests.bukkit.util.FormatUtils;
 import com.leonardobishop.quests.bukkit.util.Messages;
+import com.leonardobishop.quests.bukkit.util.ProgressFormat;
 import com.leonardobishop.quests.bukkit.util.chat.Chat;
 import com.leonardobishop.quests.common.player.QPlayer;
 import com.leonardobishop.quests.common.player.questprogressfile.QuestProgress;
@@ -114,6 +115,12 @@ public class QItemStack {
         } else {
             tempLore.addAll(globalLoreAppendNotStarted);
         }
+        if (plugin.getQuestsConfig().getBoolean("options.gui-hide-item-details", false)) {
+            // quest icons are often tools, so hide their attributes and other vanilla tooltip lines
+            try {
+                ism.addItemFlags(ItemFlag.values());
+            } catch (Exception ignored) { }
+        }
         if (plugin.getQuestsConfig().getBoolean("options.gui-use-placeholderapi")) {
             ism.setDisplayName(plugin.getPlaceholderAPIProcessor().apply(player, ism.getDisplayName()));
         }
@@ -132,7 +139,7 @@ public class QItemStack {
         return is;
     }
 
-    private static final Pattern taskPlaceholderPattern = Pattern.compile("\\{([^}]+):(progress|complete|id)}");
+    private static final Pattern taskPlaceholderPattern = Pattern.compile("\\{([^}]+):(progress|complete|id|goal|remaining|percent|bar)}");
 
     public static String processPlaceholders(String s, QuestProgress questProgress) {
         return processPlaceholders(s, questProgress, null);
@@ -185,6 +192,20 @@ public class QItemStack {
 
                 // may be particularly useful when using PAPI placeholders in boss bars
                 case "id" -> replacement = matchedTaskProgress.getTaskId();
+
+                // goal based placeholders, the goal is the task "amount"
+                case "goal", "remaining", "percent", "bar" -> {
+                    Number goal = ProgressFormat.getGoal(ProgressFormat.getTask(questProgress, matchedTaskProgress));
+                    double fraction = ProgressFormat.getFraction(matchedTaskProgress, goal);
+                    replacement = switch (placeholderPart) {
+                        case "goal" -> goal != null ? ProgressFormat.formatNumber(goal) : "?";
+                        case "remaining" -> goal != null
+                                ? ProgressFormat.formatNumber(Math.max(0.0d, goal.doubleValue() - ProgressFormat.getProgress(matchedTaskProgress)))
+                                : "?";
+                        case "percent" -> String.valueOf(ProgressFormat.getPercent(fraction));
+                        default -> ProgressFormat.getBar(fraction);
+                    };
+                }
 
                 // set it to null so we can check if there is need to update the matcher
                 default -> replacement = null;

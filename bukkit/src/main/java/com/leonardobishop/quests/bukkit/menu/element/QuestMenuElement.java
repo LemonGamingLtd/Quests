@@ -14,8 +14,11 @@ import com.leonardobishop.quests.common.enums.QuestStartResult;
 import com.leonardobishop.quests.common.player.QPlayer;
 import com.leonardobishop.quests.common.player.questprogressfile.QuestProgress;
 import com.leonardobishop.quests.common.quest.Quest;
+import org.bukkit.enchantments.Enchantment;
 import org.bukkit.event.inventory.ClickType;
+import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -95,7 +98,7 @@ public class QuestMenuElement extends MenuElement {
             if (plugin.getQItemStackRegistry().hasQuestLockedItemStack(quest)) {
                 display = plugin.getQItemStackRegistry().getQuestLockedItemStack(quest);
             } else {
-                display = config.getItem("gui.quest-locked-display");
+                display = getStateDisplay("gui.quest-locked-display", qItemStack);
             }
         } else if (status == QuestStartResult.QUEST_ALREADY_COMPLETED) {
             placeholders.put("{quest}", Chat.legacyStrip(qItemStack.getName()));
@@ -104,7 +107,7 @@ public class QuestMenuElement extends MenuElement {
             if (plugin.getQItemStackRegistry().hasQuestCompletedItemStack(quest)) {
                 display = plugin.getQItemStackRegistry().getQuestCompletedItemStack(quest);
             } else {
-                display = config.getItem("gui.quest-completed-display");
+                display = getStateDisplay("gui.quest-completed-display", qItemStack);
             }
         } else if (status == QuestStartResult.QUEST_NO_PERMISSION) {
             placeholders.put("{quest}", Chat.legacyStrip(qItemStack.getName()));
@@ -113,7 +116,7 @@ public class QuestMenuElement extends MenuElement {
             if (plugin.getQItemStackRegistry().hasQuestPermissionItemStack(quest)) {
                 display = plugin.getQItemStackRegistry().getQuestPermissionItemStack(quest);
             } else {
-                display = config.getItem("gui.quest-permission-display");
+                display = getStateDisplay("gui.quest-permission-display", qItemStack);
             }
         } else if (cooldown > 0) {
             placeholders.put("{time}", FormatUtils.time(TimeUnit.SECONDS.convert(cooldown, TimeUnit.MILLISECONDS)));
@@ -123,12 +126,42 @@ public class QuestMenuElement extends MenuElement {
             if (plugin.getQItemStackRegistry().hasQuestCooldownItemStack(quest)) {
                 display = plugin.getQItemStackRegistry().getQuestCooldownItemStack(quest);
             } else {
-                display = config.getItem("gui.quest-cooldown-display");
+                display = getStateDisplay("gui.quest-cooldown-display", qItemStack);
             }
         } else {
             return MenuUtils.applyPlaceholders(plugin, owner.getPlayerUUID(), qItemStack.toItemStack(quest, owner, questProgress));
         }
         return MenuUtils.applyPlaceholders(plugin, owner.getPlayerUUID(), display, placeholders);
+    }
+
+    /**
+     * Get the item for a quest state (locked, completed...). With "use-quest-icon" the quest keeps
+     * its own icon and only takes the name and lore of the state item.
+     */
+    @SuppressWarnings("deprecation")
+    private ItemStack getStateDisplay(String path, QItemStack qItemStack) {
+        ItemStack display = config.getItem(path);
+        if (!config.getBoolean(path + ".use-quest-icon", false)) {
+            return display;
+        }
+
+        ItemStack icon = new ItemStack(qItemStack.getStartingItemStack());
+        ItemMeta displayMeta = display.getItemMeta();
+        ItemMeta iconMeta = icon.getItemMeta();
+        if (displayMeta == null || iconMeta == null) {
+            return display;
+        }
+
+        iconMeta.setDisplayName(displayMeta.getDisplayName());
+        iconMeta.setLore(displayMeta.getLore());
+        if (config.getBoolean(path + ".glow", false)) {
+            iconMeta.addEnchant(Enchantment.KNOCKBACK, 1, true);
+        }
+        try {
+            iconMeta.addItemFlags(ItemFlag.values());
+        } catch (Exception ignored) { }
+        icon.setItemMeta(iconMeta);
+        return icon;
     }
 
     @Override

@@ -172,7 +172,16 @@ public class TaskUtils {
     }
 
 	public static void sendTrackAdvancement(Player player, Quest quest, Task task, PendingTask pendingTask, Number amount) {
+        sendTrackAdvancement(player, quest, task, pendingTask, amount, 0);
+    }
+
+    /**
+     * @param itemsTaken amount of items removed from the player's inventory for this progress, or 0
+     */
+    public static void sendTrackAdvancement(Player player, Quest quest, Task task, PendingTask pendingTask, Number amount, int itemsTaken) {
         TaskProgress taskProgress = pendingTask.taskProgress();
+
+        plugin.getQuestFeedback().onProgress(player, quest, task, taskProgress, amount, itemsTaken);
 
         boolean useActionBar = plugin.getConfig().getBoolean("options.actionbar.progress", false)
                 || (taskProgress.isCompleted() && plugin.getConfig().getBoolean("options.actionbar.complete", false));
