@@ -314,7 +314,7 @@ public class BukkitQuestsPlugin extends JavaPlugin implements Quests {
         int version;
         try {
             version = this.getServerVersion();
-            this.questsLogger.info("Your server is running version 1." + version);
+            this.questsLogger.info("Your server is running version " + this.getServer().getBukkitVersion());
         } catch (final IllegalArgumentException e) {
             // all server supported versions by Quests fulfill this format,
             // so we assume that some future version can possibly break it,
@@ -550,6 +550,12 @@ public class BukkitQuestsPlugin extends JavaPlugin implements Quests {
         final String[] bukkitVersionParts = bukkitVersion.split("\\.", 3);
         if (bukkitVersionParts.length < 2) {
             throw new IllegalArgumentException(bukkitVersion, new ArrayIndexOutOfBoundsException(bukkitVersionParts.length));
+        }
+
+        // Versions are year-based from 26.1 on, so 26.3 is newer than every 1.x handler, not "1.3" (which loaded the
+        // 1.8 handler, whose free-space count includes armour and off-hand slots)
+        if (!bukkitVersionParts[0].equals("1")) {
+            return Integer.MAX_VALUE;
         }
 
         final String minorVersionPart = bukkitVersionParts[1].split("-")[0];
